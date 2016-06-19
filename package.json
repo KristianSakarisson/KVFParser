@@ -1,0 +1,14 @@
+{
+  "name": "radio-parser",
+  "version": "0.0.1",
+  "description": "A simple service to parse data from KVF's radio steam",
+  "main": "app.js",
+  "author": {
+    "name": "Kristian Sakarisson",
+    "email": "kristian@sakarisson.com"
+  },
+  "dependencies": {
+    "dotenv": "^2.0.0",
+    "xml2js": "^0.4.16"
+  }
+}
