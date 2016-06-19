@@ -19,6 +19,8 @@ var con = mysql.createConnection({
     password: cfg.dbPassword
 })
 
+console.log(new Date().toISOString().slice(0, 19).replace('T', ' '))
+
 //Connect to database
 con.connect(function (err){
     if (err) {
@@ -31,7 +33,7 @@ con.connect(function (err){
 
 //Find last song played on startup
 con.query(
-    'SELECT * FROM test ORDER BY ID DESC LIMIT 1', function (e, rows){
+    'SELECT * FROM ' + cfg.tableName + ' ORDER BY ID DESC LIMIT 1', function (e, rows){
         if (e)
             console.log('Error: ' + e.message)
         else 
@@ -47,16 +49,20 @@ con.query(
 function runQuery() {
     console.log(new Date())
     if (currentSong.data.now[0].artist != '' && currentSong.data.now[0].title != '') {
-        if (JSON.stringify(currentSong.data.now[0].artist).slice(2, -2) + JSON.stringify(currentSong.data.now[0].title).slice(2, -2) != lastSong)
+        if (JSON.stringify(currentSong.data.now[0].artist).slice(2, -2) + JSON.stringify(currentSong.data.now[0].title).slice(2, -2) != lastSong) {
+            
+            var currentTime = new Date().toISOString().slice(0, 19).replace('T', ' ')
+            
             con.query( 
-                'INSERT INTO test (Artist, SongName) VALUES ("' + mysql.escape(currentSong.data.now[0].artist) + '","' + mysql.escape(currentSong.data.now[0].title) + '");', function (err) {
+                'INSERT INTO ' + cfg.tableName + ' (Artist, SongName, Time) VALUES ("' + mysql.escape(currentSong.data.now[0].artist) + '","' + mysql.escape(currentSong.data.now[0].title) + '","' + currentTime + '");', function (err) {
                     if (err)
                         console.log('An error occurred: ' + err.message)
                     else
                         console.log(currentSong.data.now[0].artist + ' - ' + currentSong.data.now[0].title + ' has been added to DB')
-
+                    
                     console.log('==========================')
                 })
+        }
         else {
             console.log(currentSong.data.now[0].artist + ' - ' + currentSong.data.now[0].title + ' has already been added')
             console.log('==========================')
