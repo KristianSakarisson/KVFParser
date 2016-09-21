@@ -3,6 +3,7 @@ var xml2js = require('xml2js') //Used for converting between XML and JSON
 var http = require('http') //Used for connecting to XML sheet
 var mysql = require('mysql')//Used for connecting to database and executing queries
 var dotenv = require('dotenv')
+var _ = require('underscore.string') //Used to check if strings contain "illegal" entries
 dotenv.config()
 
 var cfg = require('./config.js')
@@ -19,8 +20,6 @@ var con = mysql.createConnection({
     password: cfg.dbPassword
 })
 
-console.log(new Date().toISOString().slice(0, 19).replace('T', ' '))
-
 //Connect to database
 con.connect(function (err){
     if (err) {
@@ -36,8 +35,12 @@ con.query(
     'SELECT * FROM ' + cfg.tableName + ' ORDER BY ID DESC LIMIT 1', function (e, rows){
         if (e)
             console.log('Error: ' + e.message)
-        else 
-            lastSong = JSON.stringify(rows[0].Artist).slice(2, -2) + JSON.stringify(rows[0].SongName).slice(2, -2)
+        else {
+        	if(rows.length > 0)
+            	lastSong = JSON.stringify(rows[0].Artist).slice(2, -2) + JSON.stringify(rows[0].SongName).slice(2, -2)
+            else
+            	lastSong = ""
+        }
     }
 )
 
@@ -48,7 +51,9 @@ con.query(
 //=================================================
 function runQuery() {
     console.log(new Date())
-    if (currentSong.data.now[0].artist != '' && currentSong.data.now[0].title != '') {
+    if (currentSong.data.now[0].artist != '' && 
+        currentSong.data.now[0].title != '' && 
+        !_.contains(currentSong.data.now[0].title, 'Høvuðstíðindi')) {
         if (JSON.stringify(currentSong.data.now[0].artist).slice(2, -2) + JSON.stringify(currentSong.data.now[0].title).slice(2, -2) != lastSong) {
             
             var currentTime = new Date().toISOString().slice(0, 19).replace('T', ' ')
@@ -97,4 +102,4 @@ var checkInterval = setInterval(function () {
     }).on('error', function (e) {
         console.log('Got error: ' + e.message)
     })
-}, 5000)
+}, 1000)
