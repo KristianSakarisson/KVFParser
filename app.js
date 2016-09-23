@@ -53,7 +53,8 @@ function runQuery() {
     console.log(new Date())
     if (currentSong.data.now[0].artist != '' && 
         currentSong.data.now[0].title != '' && 
-        !_.contains(currentSong.data.now[0].title, 'Høvuðstíðindi')) {
+        !_.contains(currentSong.data.now[0].title, 'Høvuðstíðindi') && 
+        !_.contains(currentSong.data.now[0].title, 'GMF')) {
         if (JSON.stringify(currentSong.data.now[0].artist).slice(2, -2) + JSON.stringify(currentSong.data.now[0].title).slice(2, -2) != lastSong) {
             
             var currentTime = new Date().toISOString().slice(0, 19).replace('T', ' ')

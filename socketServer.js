@@ -22,33 +22,52 @@ con.connect(function (err){
     }
     console.log('Connection established')
 })
-function getMostPopularSongs(socket) {
+function getMostPopularSongs(socket, start) {
+	if(start < 0) {
+		start = 0
+	}
+	var responseObject = {
+		data : null,
+		startCount: start
+	}
+
 	var mostPopularSongs = 'select Artist, ' +
 	'SongName, ' + 
 	'count(SongName) as TimesPlayed, ' +
 	'max(Time) as LastPlayed ' +
 	'from kvf ' +
 	'where extract(year from Time) = 2016 ' +
+	//'and extract(month from Time) = 9 ' +
 	'group by SongName ' +
 	'order by TimesPlayed desc ' +
-	'limit 20'
+	'limit ' + start + ', ' + 20
 
+	var start = Date.now()
 	con.query(mostPopularSongs, function(err, data) {
 		if(err) {
 			console.log(err)
 		}
 		else {
+			responseObject.data = data
+			console.log('Query took ' + (Date.now() - start) + ' ms')
 			console.log('Sending response')
-			socket.emit('dataResponse', data)
+			socket.emit('dataResponse', responseObject)
 		}
 	})
 }
 
 io.on('connection', function(socket) {
 	console.log('Client connected')
-
-	socket.on('dataRequest', function() {
-		console.log('Data request received')
-		getMostPopularSongs(socket)
+	var lastRequest = null
+	socket.on('dataRequest', function(startCount) {
+		if(lastRequest == null || Date.now() - lastRequest > 500) {
+			console.log('Data request received')
+			console.log('Last request ' + Date.now() - lastRequest + ' milliseconds ago')
+			getMostPopularSongs(socket, startCount)
+			lastRequest = Date.now()
+		}
+		else {
+			//console.log('Request too recent!')
+		}
 	})
 })
