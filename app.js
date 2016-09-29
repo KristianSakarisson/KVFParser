@@ -4,9 +4,21 @@ var http = require('http') //Used for connecting to XML sheet
 var mysql = require('mysql')//Used for connecting to database and executing queries
 var dotenv = require('dotenv')
 var _ = require('underscore.string') //Used to check if strings contain "illegal" entries
+var express = require('express')
 dotenv.config()
 
 var cfg = require('./config.js')
+var server = require('./socketServer.js')
+
+var app = express()
+
+app.get('/', function(req, res) {
+	res.send('Hello world!')
+})
+
+app.listen(80, function() {
+	console.log('App is listening on port 80')
+})
 
 var currentSong
 var lastModified
