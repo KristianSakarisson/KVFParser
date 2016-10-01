@@ -73,6 +73,8 @@ function getLastSong() {
     )
 }
 
+getLastSong()
+
 //=================================================
 //Run the actual query.
 //This function will insert the current song into
@@ -113,8 +115,6 @@ function runQuery() {
         console.log('==========================')
     }
 }
-
-runQuery()
 
 //Check if a new song is playing every 5 seconds
 var checkInterval = setInterval(function () {
