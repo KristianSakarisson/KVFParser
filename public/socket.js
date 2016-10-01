@@ -1,5 +1,5 @@
 dojo.ready(function() {
-	var socket = io('http://localhost:12345')
+	var socket = io('http://' + config.externalServer)
 	var index = 0
 
 	function makeRequest() {

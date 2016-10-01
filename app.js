@@ -20,6 +20,10 @@ app.get('/js/socket.js', function(req, res) {
     res.sendFile(__dirname + '/public/socket.js')
 })
 
+app.get('/js/env.js', function(req, res) {
+    res.sendFile(__dirname + '/public/env.js')
+})
+
 
 app.listen(8080, function() {
 	console.log('App is listening on port 8080')
