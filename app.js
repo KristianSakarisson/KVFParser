@@ -13,11 +13,16 @@ var server = require('./socketServer.js')
 var app = express()
 
 app.get('/', function(req, res) {
-	res.send('Hello world!')
+    res.sendFile(__dirname + '/index.html')
 })
 
-app.listen(80, function() {
-	console.log('App is listening on port 80')
+app.get('/js/socket.js', function(req, res) {
+    res.sendFile(__dirname + '/public/socket.js')
+})
+
+
+app.listen(8080, function() {
+	console.log('App is listening on port 8080')
 })
 
 var currentSong
@@ -40,21 +45,29 @@ con.connect(function (err){
         return
     }
     console.log('Connection established')
+    getLastSong()
 })
 
-//Find last song played on startup
-con.query(
-    'SELECT * FROM ' + cfg.tableName + ' ORDER BY ID DESC LIMIT 1', function (e, rows){
-        if (e)
-            console.log('Error: ' + e.message)
-        else {
-        	if(rows.length > 0)
-            	lastSong = JSON.stringify(rows[0].Artist).slice(2, -2) + JSON.stringify(rows[0].SongName).slice(2, -2)
-            else
-            	lastSong = ""
+//Find last song played 
+function getLastSong() {
+    con.query(
+        'SELECT * FROM ' + cfg.tableName + ' ORDER BY ID DESC LIMIT 1', function (e, rows){
+            if (e)
+                console.log('Error: ' + e.message)
+            else {
+            	if(rows.length > 0) {
+                	lastSong = JSON.stringify(rows[0].Artist).slice(2, -2) + 
+                    ' ' + 
+                    JSON.stringify(rows[0].SongName).slice(2, -2)
+                }
+                else {
+                	lastSong = ""
+                }
+                return lastSong
+            }
         }
-    }
-)
+    )
+}
 
 //=================================================
 //Run the actual query.
@@ -67,16 +80,20 @@ function runQuery() {
         currentSong.data.now[0].title != '' && 
         !_.contains(currentSong.data.now[0].title, 'Høvuðstíðindi') && 
         !_.contains(currentSong.data.now[0].title, 'GMF')) {
-        if (JSON.stringify(currentSong.data.now[0].artist).slice(2, -2) + JSON.stringify(currentSong.data.now[0].title).slice(2, -2) != lastSong) {
+        if (JSON.stringify(currentSong.data.now[0].artist).slice(2, -2) +  
+            ' ' +  
+            JSON.stringify(currentSong.data.now[0].title).slice(2, -2) != getLastSong()) {
             
             var currentTime = new Date().toISOString().slice(0, 19).replace('T', ' ')
             
             con.query( 
                 'INSERT INTO ' + cfg.tableName + ' (Artist, SongName, Time) VALUES ("' + mysql.escape(currentSong.data.now[0].artist) + '","' + mysql.escape(currentSong.data.now[0].title) + '","' + currentTime + '");', function (err) {
-                    if (err)
+                    if (err) {
                         console.log('An error occurred: ' + err.message)
-                    else
+                    }
+                    else {
                         console.log(currentSong.data.now[0].artist + ' - ' + currentSong.data.now[0].title + ' has been added to DB')
+                    }
                     
                     console.log('==========================')
                 })
@@ -101,7 +118,7 @@ var checkInterval = setInterval(function () {
     parser.addListener('end', function (result) {
         var res = JSON.stringify(result)
         currentSong = result
-        if (JSON.stringify(lastModified) != JSON.stringify(currentSong.data.updated)) {
+        if (JSON.stringify(lastModified) != JSON.stringify(currentSong.data.updated || currentSong.data.now[0].artist[0] !== '')) {
             lastModified = currentSong.data.updated
             runQuery()
         }
