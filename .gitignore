@@ -38,6 +38,7 @@ jspm_packages
 
 # Environment
 .env
+env.js
 
 # Visual Studio generated
 obj
