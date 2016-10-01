@@ -114,6 +114,8 @@ function runQuery() {
     }
 }
 
+runQuery()
+
 //Check if a new song is playing every 5 seconds
 var checkInterval = setInterval(function () {
     //Instantiate parser object
