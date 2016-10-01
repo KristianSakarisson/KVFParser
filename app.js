@@ -84,7 +84,8 @@ function runQuery() {
             ' ' +  
             JSON.stringify(currentSong.data.now[0].title).slice(2, -2) != getLastSong()) {
             
-            var currentTime = new Date().toISOString().slice(0, 19).replace('T', ' ')
+            var tzoffset = (new Date()).getTimezoneOffset() * 60000; //offset in milliseconds
+            var currentTime = new Date(Date.now() - tzoffset).toISOString().slice(0, 19).replace('T', ' ')
             
             con.query( 
                 'INSERT INTO ' + cfg.tableName + ' (Artist, SongName, Time) VALUES ("' + mysql.escape(currentSong.data.now[0].artist) + '","' + mysql.escape(currentSong.data.now[0].title) + '","' + currentTime + '");', function (err) {
