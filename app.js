@@ -67,13 +67,11 @@ function getLastSong() {
                 else {
                 	lastSong = ""
                 }
-                return lastSong
+                //return lastSong
             }
         }
     )
 }
-
-getLastSong()
 
 //=================================================
 //Run the actual query.
@@ -88,7 +86,7 @@ function runQuery() {
         !_.contains(currentSong.data.now[0].title, 'GMF')) {
         if (JSON.stringify(currentSong.data.now[0].artist).slice(2, -2) +  
             ' ' +  
-            JSON.stringify(currentSong.data.now[0].title).slice(2, -2) != getLastSong()) {
+            JSON.stringify(currentSong.data.now[0].title).slice(2, -2) != lastSong) {
             
             var tzoffset = (new Date()).getTimezoneOffset() * 60000; //offset in milliseconds
             var currentTime = new Date(Date.now() - tzoffset).toISOString().slice(0, 19).replace('T', ' ')
@@ -116,8 +114,9 @@ function runQuery() {
     }
 }
 
-//Check if a new song is playing every 5 seconds
+//Check if a new song is playing every second
 var checkInterval = setInterval(function () {
+    getLastSong()
     //Instantiate parser object
     var parser = new xml2js.Parser('UTF-8')
 
