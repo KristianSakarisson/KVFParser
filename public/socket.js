@@ -37,4 +37,9 @@ dojo.ready(function() {
 		index += 20
 		makeRequest()
 	})
+	$("#search").click(function() {
+		console.log('search')
+		index = 0
+		socket.emit('search', $('#artist').val(), $('#song').val())
+	})
 })

@@ -9,8 +9,8 @@ var cfg = require('./config.js')
 var con = mysql.createConnection({
     host: cfg.dbHost,
     database: cfg.dbName,
-    user: cfg.dbLogin,
-    password: cfg.dbPassword
+    user: cfg.appLogin,
+    password: cfg.appPassword
 })
 
 //Connect to database
@@ -22,6 +22,31 @@ con.connect(function (err){
     }
     //console.log('Connection established')
 })
+
+function generateQuery(socket, artist, song) {
+	var query = 'select Artist, ' +
+	'SongName, ' +
+	'Time as LastPlayed ' +
+	'from kvf ' +
+	'where Artist like (concat("%", trim(both "\'" from "' + mysql.escape(artist) + '"), "%")) ' +
+	'and SongName like (concat("%", trim(both "\'" from "' + mysql.escape(song) + '"), "%")) ' +
+	'order by id ' +
+	'limit 100'
+
+	console.log(query)
+
+	con.query(query, function(err, data) {
+		if(err) {
+			console.log(err)
+			return
+		}
+		else {
+			//console.log(data)
+			socket.emit('dataResponse', {data: data, startCount: 0})
+		}
+	})
+}
+
 function getMostPopularSongs(socket, start) {
 	if(start < 0) {
 		start = 0
@@ -69,5 +94,9 @@ io.on('connection', function(socket) {
 		else {
 			//console.log('Request too recent! ' + (Date.now() - lastRequest) + ' milliseconds ago')
 		}
+	})
+
+	socket.on('search', function(artist, song) {
+		generateQuery(socket, artist, song)
 	})
 })
