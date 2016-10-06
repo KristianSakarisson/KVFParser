@@ -1,4 +1,5 @@
 var https = require('https')
+var events = require('events')
 
 callback = function(response) {
 	var str = ''
@@ -9,11 +10,14 @@ callback = function(response) {
 
 	response.on('end', function () {
 		try {
-			console.log('https://play.spotify.com/track/' + JSON.parse(str).tracks.items[0].id)
+			var songLink = ('https://play.spotify.com/track/' + JSON.parse(str).tracks.items[0].id)
+			songEmitter.emit('songReady', songLink)
 		}
 		catch(err) {
 			console.log('Song not found on Spotify')
+			songEmitter.emit('songReady', '')
 		}
+		//songEmitter.emit('songReady')
 	})
 }
 
@@ -29,4 +33,17 @@ function getSpotifyLink(artist, songName) {
 	https.request(options, callback).end()
 }
 
-exports.getLink = getSpotifyLink
+var songEmitter = new events()
+
+songEmitter.on('songRequest', function(song) {
+	getSpotifyLink(song.artist, song.songName)
+})
+
+songEmitter.on('songReady', function(link) {
+	//songEmitter.emit(link)
+	console.log(link)
+})
+
+songEmitter.emit('songRequest', { artist: 'Týr', songName: 'Ormurin Langi'})
+
+exports.link = songEmitter
