@@ -98,6 +98,23 @@ function runQuery() {
                     }
                     else {
                         console.log(currentSong.data.now[0].artist + ' - ' + currentSong.data.now[0].title + ' has been added to DB')
+                        con.query('SELECT * FROM spotifylinks WHERE Artist="' + mysql.escape(currentSong.data.now[0].artist) + '" AND SongName="' + mysql.escape(currentSong.data.now[0].title) + '"', function(err, data) {
+                            if(err) {
+                                console.log(err)
+                            }
+                            else {
+                                if(data.length == 0) {
+                                    con.query('INSERT INTO spotifylinks (Artist, SongName) VALUES ("' + mysql.escape(currentSong.data.now[0].artist) + '","' + mysql.escape(currentSong.data.now[0].title) + '");', function (err) {
+                                        if(err) {
+                                            console.log(err)
+                                        }
+                                        else {
+                                            console.log('Song inserted into spotifylinks')
+                                        }
+                                    })
+                                }
+                            }
+                        })
                     }
                     
                     console.log('==========================')
@@ -129,7 +146,7 @@ var checkInterval = setInterval(function () {
             runQuery()
         }
     })
-    
+
     //Connect to url and parse data
     http.get('http://kvf.fo/service/now-next.xml', function (res) {
         res.on('data', function (chunk) {
