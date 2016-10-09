@@ -1,9 +1,8 @@
 var https = require('https')
-var events = require('events')
 
-function getSpotifyLink(artist, songName) {
+function getSpotifyLink(song, callback) {
 
-	var searchString = encodeURIComponent(artist + ' ' + songName)
+	var searchString = encodeURIComponent(song.artist + ' ' + song.songName)
 
 	var options = {
 		host: 'api.spotify.com',
@@ -20,19 +19,13 @@ function getSpotifyLink(artist, songName) {
 		response.on('end', function () {
 			try {
 				var songLink = ('https://play.spotify.com/track/' + JSON.parse(str).tracks.items[0].id)
-				songEmitter.emit('songReady', { artist: artist, songName: songName, spotifyLink: songLink } )
+				callback({ artist: song.artist, songName: song.songName, spotifyLink: songLink })
 			}
 			catch(err) {
-				songEmitter.emit('songReady', { artist: artist, songName: songName, spotifyLink: '' })
+				callback({ artist: song.artist, songName: song.songName, spotifyLink: '' })
 			}
 		})
 	}).end()
 }
 
-var songEmitter = new events()
-
-songEmitter.on('songRequest', function(song) {
-	getSpotifyLink(song.artist, song.songName)
-})
-
-exports.linkFetch = songEmitter
+exports.get = getSpotifyLink
