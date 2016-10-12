@@ -1,14 +1,16 @@
-﻿//Import required modules
+//Import required modules
 var xml2js = require('xml2js') //Used for converting between XML and JSON
 var http = require('http') //Used for connecting to XML sheet
 var mysql = require('mysql')//Used for connecting to database and executing queries
 var dotenv = require('dotenv')
 var _ = require('underscore.string') //Used to check if strings contain "illegal" entries
 var express = require('express')
+var moment = require('moment')
 dotenv.config()
 
 var cfg = require('./config.js')
 var server = require('./socketServer.js')
+var linkUpdater = require('./updateLinks.js')
 
 var app = express()
 
@@ -52,6 +54,8 @@ con.connect(function (err){
     getLastSong()
 })
 
+var currentDay = moment().format('DDD')
+
 //Find last song played 
 function getLastSong() {
     con.query(
@@ -65,9 +69,8 @@ function getLastSong() {
                     JSON.stringify(rows[0].SongName).slice(2, -2)
                 }
                 else {
-                	lastSong = ""
+                	lastSong = ''
                 }
-                //return lastSong
             }
         }
     )
@@ -98,18 +101,19 @@ function runQuery() {
                     }
                     else {
                         console.log(currentSong.data.now[0].artist + ' - ' + currentSong.data.now[0].title + ' has been added to DB')
-                        con.query('SELECT * FROM spotifylinks WHERE Artist="' + mysql.escape(currentSong.data.now[0].artist) + '" AND SongName="' + mysql.escape(currentSong.data.now[0].title) + '"', function(err, data) {
+                        con.query('SELECT * FROM links WHERE Artist="' + mysql.escape(currentSong.data.now[0].artist) + '" AND SongName="' + mysql.escape(currentSong.data.now[0].title) + '"', function(err, data) {
                             if(err) {
                                 console.log(err)
                             }
                             else {
+
                                 if(data.length == 0) {
-                                    con.query('INSERT INTO spotifylinks (Artist, SongName) VALUES ("' + mysql.escape(currentSong.data.now[0].artist) + '","' + mysql.escape(currentSong.data.now[0].title) + '");', function (err) {
+                                    con.query('INSERT INTO links (Artist, SongName) VALUES ("' + mysql.escape(currentSong.data.now[0].artist) + '","' + mysql.escape(currentSong.data.now[0].title) + '");', function (err) {
                                         if(err) {
                                             console.log(err)
                                         }
                                         else {
-                                            console.log('Song inserted into spotifylinks')
+                                            console.log('Song inserted into links table')
                                         }
                                     })
                                 }
@@ -155,4 +159,8 @@ var checkInterval = setInterval(function () {
     }).on('error', function (e) {
         console.log('Got error: ' + e.message)
     })
+    if(moment().format('DDD') != currentDay) {
+        linkUpdater.update()
+        currentDay = moment().format('DDD')
+    }
 }, 1000)
