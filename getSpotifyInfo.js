@@ -69,7 +69,7 @@ function getSpotifyLinks(songArray, write, mainCallback) {
 		if(write) {
 			functionArray.push(function(songObject, callback) {
 				var query
-				if (songObject.spotifyLink != '') {
+				if (songObject.spotifyLink) { // Check that link is not undefined
 					query = 'UPDATE links SET SpotifyURL = "' + songObject.spotifyLink + '" WHERE Artist = "\'' + songObject.artist + '\'" AND SongName = "\'' + songObject.songName + '\'"; '
 					
 					databaseClient.query(query, function(err, data) {
