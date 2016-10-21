@@ -11,6 +11,7 @@ dotenv.config()
 var cfg = require('./config.js')
 var server = require('./socketServer.js')
 var linkUpdater = require('./updateLinks.js')
+var spotify = require('./getSpotifyInfo.js')
 
 var app = express()
 
@@ -106,15 +107,23 @@ function runQuery() {
                                 console.log(err)
                             }
                             else {
-
                                 if(data.length == 0) {
-                                    con.query('INSERT INTO links (Artist, SongName) VALUES ("' + mysql.escape(currentSong.data.now[0].artist) + '","' + mysql.escape(currentSong.data.now[0].title) + '");', function (err) {
-                                        if(err) {
-                                            console.log(err)
+                                    spotify.get({ artist: currentSong.data.now[0].artist, songName: currentSong.data.now[0].title}, false, function(spotifyInfo) {
+                                        var link
+                                        if(spotifyInfo.spotifyLink != null) {
+                                            link = spotifyInfo.spotifyLink
                                         }
                                         else {
-                                            console.log('Song inserted into links table')
+                                            link = 'NULL'
                                         }
+                                        con.query('INSERT INTO links (Artist, SongName, SpotifyURL) VALUES ("' + mysql.escape(currentSong.data.now[0].artist) + '","' + mysql.escape(currentSong.data.now[0].title) + '","' + link + '");', function (err) {
+                                            if(err) {
+                                                console.log(err)
+                                            }
+                                            else {
+                                                console.log('Song inserted into links table. Link: ' + link)
+                                            }
+                                        })
                                     })
                                 }
                             }
