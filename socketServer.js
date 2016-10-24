@@ -23,7 +23,7 @@ con.connect(function (err){
     //console.log('Connection established')
 })
 
-function generateQuery(socket, artist, song) {
+function generateQuery(artist, song, callback) {
 	var query = 'select Artist, ' +
 	'SongName, ' +
 	'Time as LastPlayed ' +
@@ -31,9 +31,7 @@ function generateQuery(socket, artist, song) {
 	'where Artist like (concat("%", trim(both "\'" from "' + mysql.escape(artist) + '"), "%")) ' +
 	'and SongName like (concat("%", trim(both "\'" from "' + mysql.escape(song) + '"), "%")) ' +
 	'order by id ' +
-	'limit 100'
-
-	console.log(query)
+	'limit 1'
 
 	con.query(query, function(err, data) {
 		if(err) {
@@ -42,7 +40,29 @@ function generateQuery(socket, artist, song) {
 		}
 		else {
 			//console.log(data)
-			socket.emit('dataResponse', {data: data, startCount: 0})
+			//socket.emit('dataResponse', {data: data, startCount: 0})
+			var query = 'select SpotifyURL ' + 
+				'from links ' +
+				'where Artist = "' + data[0].Artist + '" ' +
+				'and SongName = "' + data[0].SongName + '" ' +
+				'limit 1'
+
+			//console.log(query)
+			con.query(query, function(err, response) {
+				data = data[0]
+				if(err) {
+					console.log(err)
+					return
+				}
+				try {
+					data.spotifyUrl = response[0].SpotifyURL
+				}
+				catch(err) {
+					data.spotifyUrl = null
+				}
+				//console.log(data)
+				callback({ data: data, startCount: 0 })
+			})
 		}
 	})
 }
@@ -85,6 +105,7 @@ io.on('connection', function(socket) {
 	//console.log('Client connected')
 	var lastRequest = null
 	socket.on('dataRequest', function(startCount) {
+		console.log('data request')
 		if(lastRequest == null || Date.now() - lastRequest > 500) {
 			//console.log('Data request received')
 			//console.log('Last request ' + (Date.now() - lastRequest) + ' milliseconds ago')
@@ -97,6 +118,10 @@ io.on('connection', function(socket) {
 	})
 
 	socket.on('search', function(artist, song) {
-		generateQuery(socket, artist, song)
+		generateQuery(artist, song, function(response) {
+			socket.emit('searchResponse', response.data)
+		})
 	})
 })
+
+exports.query = generateQuery
