@@ -1,42 +1,37 @@
+'use strict'
 //Import required modules
-var xml2js = require('xml2js') //Used for converting between XML and JSON
-var http = require('http') //Used for connecting to XML sheet
-var mysql = require('mysql')//Used for connecting to database and executing queries
-var dotenv = require('dotenv')
-var _ = require('underscore.string') //Used to check if strings contain "illegal" entries
-var express = require('express')
-var moment = require('moment')
+const xml2js = require('xml2js') //Used for converting between XML and JSON
+const http = require('http') //Used for connecting to XML sheet
+const mysql = require('mysql')//Used for connecting to database and executing queries
+const dotenv = require('dotenv')
+const _ = require('underscore.string') //Used to check if strings contain "illegal" entries
+const express = require('express')
+const moment = require('moment')
 dotenv.config()
 
-var cfg = require('./config.js')
-var server = require('./socketServer.js')
-var linkUpdater = require('./updateLinks.js')
+const cfg = require('./config.js')
+const server = require('./socketServer.js')
+const linkUpdater = require('./updateLinks.js')
 
-var app = express()
+const app = express()
 
-app.get('/', function(req, res) {
+app.get('/', (req, res) => {
     res.sendFile(__dirname + '/index.html')
 })
 
-app.get('/js/socket.js', function(req, res) {
-    res.sendFile(__dirname + '/public/socket.js')
+app.use('/public', express.static('public'))
+
+
+app.listen(80, () => {
+	console.log('App is listening on port 80')
 })
 
-app.get('/js/env.js', function(req, res) {
-    res.sendFile(__dirname + '/public/env.js')
-})
-
-
-app.listen(8080, function() {
-	console.log('App is listening on port 8080')
-})
-
-var currentSong
-var lastModified
-var lastSong
+let currentSong
+let lastModified
+let lastSong
 
 //Initialize connection variables
-var con = mysql.createConnection({
+const con = mysql.createConnection({
     host: cfg.dbHost,
     database: cfg.dbName,
     user: cfg.dbLogin,
@@ -44,22 +39,21 @@ var con = mysql.createConnection({
 })
 
 //Connect to database
-con.connect(function (err){
+con.connect(err => {
     if (err) {
         console.log('Error connecting to DB')
         console.log(err)
         return
     }
     console.log('Connection established')
-    getLastSong()
 })
 
-var currentDay = moment().format('DDD')
+let currentDay = moment().format('DDD')
 
 //Find last song played 
 function getLastSong() {
     con.query(
-        'SELECT * FROM ' + cfg.tableName + ' ORDER BY ID DESC LIMIT 1', function (e, rows){
+        `SELECT * FROM ${cfg.tableName} ORDER BY ID DESC LIMIT 1`, (e, rows) => {
             if (e)
                 console.log('Error: ' + e.message)
             else {
@@ -76,39 +70,39 @@ function getLastSong() {
     )
 }
 
-//=================================================
-//Run the actual query.
-//This function will insert the current song into
-//the database
-//=================================================
+/**
+ * Run the actual query.
+ * This function will insert the current song into
+ * the database
+ */
 function runQuery() {
     console.log(new Date())
     if (currentSong.data.now[0].artist != '' && 
         currentSong.data.now[0].title != '' && 
-        !_.contains(currentSong.data.now[0].title, 'Høvuðstíðindi') && 
-        !_.contains(currentSong.data.now[0].title, 'GMF')) {
+        !_.contains(currentSong.data.now[0].title, 'Høvuðstíðindi') && // News theme
+        !_.contains(currentSong.data.now[0].title, 'GMF')) { // Separating tune
         if (JSON.stringify(currentSong.data.now[0].artist).slice(2, -2) +  
             ' ' +  
             JSON.stringify(currentSong.data.now[0].title).slice(2, -2) != lastSong) {
             
-            var tzoffset = (new Date()).getTimezoneOffset() * 60000; //offset in milliseconds
-            var currentTime = new Date(Date.now() - tzoffset).toISOString().slice(0, 19).replace('T', ' ')
+            const tzoffset = (new Date()).getTimezoneOffset() * 60000; //offset in milliseconds
+            const currentTime = new Date(Date.now() - tzoffset).toISOString().slice(0, 19).replace('T', ' ') // Time formating
             
             con.query( 
-                'INSERT INTO ' + cfg.tableName + ' (Artist, SongName, Time) VALUES ("' + mysql.escape(currentSong.data.now[0].artist) + '","' + mysql.escape(currentSong.data.now[0].title) + '","' + currentTime + '");', function (err) {
+                `INSERT INTO ${cfg.tableName} (Artist, SongName, Time) VALUES ("${mysql.escape(currentSong.data.now[0].artist)}","${mysql.escape(currentSong.data.now[0].title)}","${currentTime}");`, err => {
                     if (err) {
                         console.log('An error occurred: ' + err.message)
                     }
                     else {
-                        console.log(currentSong.data.now[0].artist + ' - ' + currentSong.data.now[0].title + ' has been added to DB')
-                        con.query('SELECT * FROM links WHERE Artist="' + mysql.escape(currentSong.data.now[0].artist) + '" AND SongName="' + mysql.escape(currentSong.data.now[0].title) + '"', function(err, data) {
+                        console.log(`${currentSong.data.now[0].artist} - ${currentSong.data.now[0].title} has been added to DB`)
+                        con.query(`SELECT * FROM links WHERE Artist="${mysql.escape(currentSong.data.now[0].artist)}" AND SongName="${mysql.escape(currentSong.data.now[0].title)}"`, (err, data) => {
                             if(err) {
                                 console.log(err)
                             }
                             else {
 
                                 if(data.length == 0) {
-                                    con.query('INSERT INTO links (Artist, SongName) VALUES ("' + mysql.escape(currentSong.data.now[0].artist) + '","' + mysql.escape(currentSong.data.now[0].title) + '");', function (err) {
+                                    con.query('INSERT INTO links (Artist, SongName) VALUES ("' + mysql.escape(currentSong.data.now[0].artist) + '","' + mysql.escape(currentSong.data.now[0].title) + '");', err => {
                                         if(err) {
                                             console.log(err)
                                         }
@@ -136,14 +130,14 @@ function runQuery() {
 }
 
 //Check if a new song is playing every second
-var checkInterval = setInterval(function () {
+let checkInterval = setInterval(() => {
     getLastSong()
     //Instantiate parser object
-    var parser = new xml2js.Parser('UTF-8')
+    const parser = new xml2js.Parser('UTF-8')
 
     //Listen for any completed parses
-    parser.addListener('end', function (result) {
-        var res = JSON.stringify(result)
+    parser.addListener('end', result => {
+        const res = JSON.stringify(result)
         currentSong = result
         if (JSON.stringify(lastModified) != JSON.stringify(currentSong.data.updated || currentSong.data.now[0].artist[0] !== '')) {
             lastModified = currentSong.data.updated
@@ -152,11 +146,11 @@ var checkInterval = setInterval(function () {
     })
 
     //Connect to url and parse data
-    http.get('http://kvf.fo/service/now-next.xml', function (res) {
-        res.on('data', function (chunk) {
+    http.get('http://kvf.fo/service/now-next.xml', res => {
+        res.on('data', chunk => {
             parser.parseString(chunk)
         })
-    }).on('error', function (e) {
+    }).on('error', e => {
         console.log('Got error: ' + e.message)
     })
     if(moment().format('DDD') != currentDay) {

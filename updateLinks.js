@@ -1,37 +1,38 @@
-var spotify = require('./getSpotifyInfo.js')
-var mysql = require('mysql')
-var _ = require('underscore')
-var dotenv = require('dotenv')
+'use strict'
+const spotify = require('./getSpotifyInfo.js')
+const mysql = require('mysql')
+const _ = require('underscore')
+const dotenv = require('dotenv')
 dotenv.config()
-var cfg = require('./config.js')
+const cfg = require('./config.js')
 
 function update() {
 	console.log('Running link updater... This might take several hours')
-	var updateConnection = mysql.createConnection({
+	const updateConnection = mysql.createConnection({
 		host: cfg.dbHost,
 		database: cfg.dbName,
 		user: cfg.dbLogin,
 		password: cfg.dbPassword
 	})
 
-	var songLinks = []
-	var songsWithLink = []
+	let songLinks = []
+	let songsWithLink = []
 
-	updateConnection.connect(function(err) {
+	updateConnection.connect(err => {
 		if(err) {
 			console.log(err)
 		}
 		else {
 			console.log('Connected')
 		}
-		updateConnection.query('select distinct Artist, SongName from links', function(err, data) {
+		updateConnection.query('select distinct Artist, SongName from links', (err, data) => {
 			if(err) {
 				console.log(err)
 			}
 			else {
-				var requestArray = []
-				var query = ''
-				_.each(data, function(song) {
+				let requestArray = []
+				let query = ''
+				_.each(data, song => {
 					requestArray.push({ artist: song.Artist.slice(1, -1), songName: song.SongName.slice(1, -1) })
 				})
 				spotify.get(requestArray, true, function(response) {

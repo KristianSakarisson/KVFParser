@@ -1,12 +1,13 @@
-var io = require('socket.io')(12345)
-var mysql = require('mysql')
-var dotenv = require('dotenv')
+'use strict'
+const io = require('socket.io')(12345)
+const mysql = require('mysql')
+const dotenv = require('dotenv')
 dotenv.config()
 
-var cfg = require('./config.js')
+const cfg = require('./config.js')
 
 //Initialize connection variables
-var con = mysql.createConnection({
+const con = mysql.createConnection({
     host: cfg.dbHost,
     database: cfg.dbName,
     user: cfg.appLogin,
@@ -14,7 +15,7 @@ var con = mysql.createConnection({
 })
 
 //Connect to database
-con.connect(function (err){
+con.connect(err => {
     if (err) {
         console.log('Error connecting to DB')
         console.log(err)
@@ -24,25 +25,26 @@ con.connect(function (err){
 })
 
 function generateQuery(socket, artist, song) {
-	var query = 'select Artist, ' +
-	'SongName, ' +
-	'Time as LastPlayed ' +
-	'from kvf ' +
-	'where Artist like (concat("%", trim(both "\'" from "' + mysql.escape(artist) + '"), "%")) ' +
-	'and SongName like (concat("%", trim(both "\'" from "' + mysql.escape(song) + '"), "%")) ' +
-	'order by id ' +
-	'limit 100'
+	const query = `
+	select Artist, 
+	SongName, 
+	Time 
+	from kvf 
+	where Artist like (concat("%", trim(both "'" from "${mysql.escape(artist)}"), "%")) 
+	and SongName like (concat("%", trim(both "'" from "${mysql.escape(song)}"), "%")) 
+	order by id desc 
+	limit 100;`
 
 	console.log(query)
 
-	con.query(query, function(err, data) {
+	con.query(query, (err, data) => {
 		if(err) {
 			console.log(err)
 			return
 		}
 		else {
 			//console.log(data)
-			socket.emit('dataResponse', {data: data, startCount: 0})
+			socket.emit('searchResponse', {data: data})
 		}
 	})
 }
@@ -51,24 +53,23 @@ function getMostPopularSongs(socket, start) {
 	if(start < 0) {
 		start = 0
 	}
-	var responseObject = {
+	const responseObject = {
 		data : null,
 		startCount: start
 	}
 
-	var mostPopularSongs = 'select Artist, ' +
-	'SongName, ' + 
-	'count(SongName) as TimesPlayed, ' +
-	'max(Time) as LastPlayed ' +
-	'from kvf ' +
-	'where extract(year from Time) = 2016 ' +
-	//'and extract(month from Time) = 9 ' +
-	'group by SongName ' +
-	'order by TimesPlayed desc ' +
-	'limit ' + start + ', ' + 20
+	const mostPopularSongs = `
+	select Artist, 
+	SongName, 
+	count(SongName) as TimesPlayed, 
+	max(Time) as LastPlayed 
+	from kvf 
+	where extract(year from Time) = 2017 
+	group by SongName 
+	order by TimesPlayed desc 
+	limit ${start}, 20;`
 
-	//var start = Date.now()
-	con.query(mostPopularSongs, function(err, data) {
+	con.query(mostPopularSongs, (err, data) => {
 		if(err) {
 			console.log(err)
 		}
@@ -81,10 +82,10 @@ function getMostPopularSongs(socket, start) {
 	})
 }
 
-io.on('connection', function(socket) {
+io.on('connection', socket => {
 	//console.log('Client connected')
-	var lastRequest = null
-	socket.on('dataRequest', function(startCount) {
+	let lastRequest = null
+	socket.on('dataRequest', startCount => {
 		if(lastRequest == null || Date.now() - lastRequest > 500) {
 			//console.log('Data request received')
 			//console.log('Last request ' + (Date.now() - lastRequest) + ' milliseconds ago')
@@ -96,7 +97,7 @@ io.on('connection', function(socket) {
 		}
 	})
 
-	socket.on('search', function(artist, song) {
+	socket.on('search', (artist, song) => {
 		generateQuery(socket, artist, song)
 	})
 })

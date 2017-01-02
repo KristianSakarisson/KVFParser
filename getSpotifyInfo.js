@@ -1,14 +1,15 @@
-var https = require('https')
-var async = require('async')
-var mysql = require('mysql')
-var _ = require('underscore')
-var dotenv = require('dotenv')
+'use strict'
+const https = require('https')
+const async = require('async')
+const mysql = require('mysql')
+const _ = require('underscore')
+const dotenv = require('dotenv')
 dotenv.config()
-var cfg = require('./config.js')
+const cfg = require('./config.js')
 
-var counter = 0
+let counter = 0
 
-var databaseClient
+let databaseClient
 
 function getSpotifyLinks(songArray, write, mainCallback) {
 
@@ -16,8 +17,8 @@ function getSpotifyLinks(songArray, write, mainCallback) {
 		songArray = [songArray]
 	}
 
-	var functionArray = []
-	var resultArray = []
+	let functionArray = []
+	let resultArray = []
 
 	if(write) {
 		databaseClient = mysql.createConnection({
@@ -28,30 +29,30 @@ function getSpotifyLinks(songArray, write, mainCallback) {
 		})
 	}
 
-	functionArray.push(function(callback) {
+	functionArray.push(callback => {
 		callback(null, null)
 	})
 
-	_.each(songArray, function(song) {
-		functionArray.push(function(input, callback) {
-			var searchString = encodeURIComponent(song.artist + ' ' + song.songName)
+	_.each(songArray, song => {
+		functionArray.push((input, callback) => {
+			const searchString = encodeURIComponent(`${song.artist} ${song.songName}`)
 
-			var options = {
+			const options = {
 				host: 'api.spotify.com',
-				path: '/v1/search?q=' + searchString + '&type=track'
+				path: `</v1/search?q=${searchString}&type=track`
 			}
 
-			https.request(options, function(response) {
-				var str = ''
+			https.request(options, response => {
+				let str = ''
 
-				response.on('data', function (chunk) {
+				response.on('data', chunk => {
 					str += chunk;
 				})
 
-				response.on('end', function () {
-					var songLink
+				response.on('end', () => {
+					let songLink
 					try {
-						songLink = ('https://play.spotify.com/track/' + JSON.parse(str).tracks.items[0].id)
+						songLink = (`<https://play.spotify.com/track/${JSON.parse(str).tracks.items[0].id}`)
 					}
 					catch(err) {
 						resultArray.push({ artist: song.artist, songName: song.songName, spotifyLink: '' })
@@ -67,12 +68,12 @@ function getSpotifyLinks(songArray, write, mainCallback) {
 			}).end()
 		})
 		if(write) {
-			functionArray.push(function(songObject, callback) {
-				var query
+			functionArray.push((songObject, callback) => {
+				let query
 				if (songObject.spotifyLink != '') {
-					query = 'UPDATE links SET SpotifyURL = "' + songObject.spotifyLink + '" WHERE Artist = "\'' + songObject.artist + '\'" AND SongName = "\'' + songObject.songName + '\'"; '
+					query = `UPDATE links SET SpotifyURL = "${songObject.spotifyLink}" WHERE Artist = "'${songObject.artist}'" AND SongName = "'${songObject.songName}'"; `
 					
-					databaseClient.query(query, function(err, data) {
+					databaseClient.query(query, (err, data) => {
 						if(err) {
 							console.log(err)
 						}

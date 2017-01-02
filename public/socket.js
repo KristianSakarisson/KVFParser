@@ -1,23 +1,40 @@
-dojo.ready(function() {
-	var socket = io('http://' + config.externalServer)
-	var index = 0
+'use strict'
+dojo.ready(() => {
+	const socket = io('http://' + config.externalServer)
+	let index = 0
 
 	function makeRequest() {
 		socket.emit('dataRequest', index)
 	}
 
-	socket.on('dataResponse', function(responseObject) {
+	socket.on('dataResponse', responseObject => {
 		console.log(responseObject)
-		var data = responseObject.data
-		var counter = responseObject.startCount + 1
-		var html = '<table class="table table-striped table-bordered" cellspacing="0" width="100%"><tr><th>Bólkur</th><th>Heiti</th><th>Spældur</th><th>Seinast spældur</th></tr>'
+		const data = responseObject.data
+		const counter = responseObject.startCount + 1
+		let html = '<table class="table table-striped table-bordered" cellspacing="0" width="100%"><tr><th>Bólkur</th><th>Heiti</th><th>Spældur</th><th>Seinast spældur</th></tr>'
 		$('#title').html('Mest spældu sangirnir á KVF í ' + new Date(data[0].LastPlayed).getFullYear())
-		dojo.forEach(data, function(song) {
-			lastPlayed = new Date(song.LastPlayed)
-			html += '<tr><td>' + counter++ + '. ' + song.Artist.slice(1, -1) + '</td><td>' + 
+		dojo.forEach(data, song => {
+			const lastPlayed = new Date(song.LastPlayed)
+			html += `
+			<tr><td>${counter++}. ${song.Artist.slice(1, -1)}</td><td> 
 			song.SongName.slice(1, -1) + '</td><td>' + 
 			song.TimesPlayed + ' ferðir</td><td>' + 
-			lastPlayed.toLocaleDateString() + ' ' + ('0' + lastPlayed.getHours()).slice(-2) + ':' + ('0' + lastPlayed.getMinutes()).slice(-2) + '</td></tr>'
+			lastPlayed.toLocaleDateString() + ' ' + ('0' + lastPlayed.getHours()).slice(-2) + ':' + ('0' + lastPlayed.getMinutes()).slice(-2) + '</td></tr>`
+		})
+		html += '</table>'
+		$('#dataContainer').html(html)
+	})
+
+	socket.on('searchResponse', responseObject => {
+		console.log(responseObject)
+		const data = responseObject.data
+		let html = '<table class="table table-striped table-bordered" cellspacing="0" width="100%"><tr><th>Bólkur</th><th>Heiti</th><th>Tíðspunkt</th></tr>'
+		dojo.forEach(data, song => {
+			var time = new Date(song.Time)
+			html += '<tr><td>' + counter++ + '. ' + song.Artist.slice(1, -1) + '</td><td>' + 
+			song.SongName.slice(1, -1) + '</td><td>' + 
+			//song.TimesPlayed + ' ferðir</td><td>' + 
+			time.toLocaleDateString() + ' ' + ('0' + time.getHours()).slice(-2) + ':' + ('0' + time.getMinutes()).slice(-2) + '</td></tr>'
 		})
 		html += '</table>'
 		$('#dataContainer').html(html)
@@ -25,19 +42,19 @@ dojo.ready(function() {
 
 	makeRequest()
 
-	$("#backButton").click(function() {
+	$("#backButton").click(() => {
 		console.log('back')
 		if(index - 20 >= 0) {
 			index -= 20
 			makeRequest()
 		}
 	})
-	$("#forwardButton").click(function() {
+	$("#forwardButton").click(() => {
 		console.log('forward')
 		index += 20
 		makeRequest()
 	})
-	$("#search").click(function() {
+	$("#search").click(() => {
 		console.log('search')
 		index = 0
 		socket.emit('search', $('#artist').val(), $('#song').val())
