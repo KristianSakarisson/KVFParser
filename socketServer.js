@@ -44,7 +44,30 @@ function generateQuery(socket, artist, song) {
 		}
 		else {
 			//console.log(data)
-			socket.emit('searchResponse', {data: data})
+			//socket.emit('dataResponse', {data: data, startCount: 0})
+			const query = `
+				select SpotifyURL 
+				from links 
+				where Artist = "'${data[0].Artist}'" 
+				and SongName = "'${data[0].SongName}'" 
+				limit 1`
+
+			//console.log(query)
+			con.query(query, (err, response) => {
+				data = data[0]
+				if(err) {
+					console.log(err)
+					return
+				}
+				try {
+					data.spotifyUrl = response[0].SpotifyURL
+				}
+				catch(err) {
+					data.spotifyUrl = null
+				}
+				//console.log(data)
+				callback({ data: data, startCount: 0 })
+			})
 		}
 	})
 }
@@ -86,6 +109,7 @@ io.on('connection', socket => {
 	//console.log('Client connected')
 	let lastRequest = null
 	socket.on('dataRequest', startCount => {
+		console.log('data request')
 		if(lastRequest == null || Date.now() - lastRequest > 500) {
 			//console.log('Data request received')
 			//console.log('Last request ' + (Date.now() - lastRequest) + ' milliseconds ago')
@@ -98,6 +122,10 @@ io.on('connection', socket => {
 	})
 
 	socket.on('search', (artist, song) => {
-		generateQuery(socket, artist, song)
+		generateQuery(artist, song, function(response) {
+			socket.emit('searchResponse', response.data)
+		})
 	})
 })
+
+exports.query = generateQuery

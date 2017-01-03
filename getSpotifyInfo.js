@@ -77,10 +77,8 @@ function getSpotifyLinks(songArray, write, mainCallback) {
 						if(err) {
 							console.log(err)
 						}
-						else {
-							//console.log(++counter + '(S): ' + songObject.artist + ' - ' + songObject.songName)
-							callback(null, null)
-						}
+						//console.log(++counter + '(S): ' + songObject.artist + ' - ' + songObject.songName)
+						callback(null, null)
 					})
 				}
 				else {
